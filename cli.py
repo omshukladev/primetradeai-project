@@ -49,9 +49,14 @@ def print_request_summary(
 def print_response_summary(response: dict) -> None:
     """Print the formatted response details from the Binance order execution."""
     print(f"{Fore.GREEN}[INFO] Order placed successfully!")
-    print(f"  Order ID     : {response.get('orderId')}")
-    print(f"  Status       : {response.get('status')}")
-    print(f"  Executed Qty : {response.get('executedQty')}")
+    
+    order_id = response.get("orderId") or response.get("algoId")
+    status = response.get("status") or response.get("algoStatus")
+    executed_qty = response.get("executedQty") or response.get("quantity") or "0"
+    
+    print(f"  Order ID     : {order_id}")
+    print(f"  Status       : {status}")
+    print(f"  Executed Qty : {executed_qty}")
     
     # Try to extract average price
     avg_price = response.get("avgPrice")

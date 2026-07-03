@@ -131,13 +131,13 @@ def log_response(logger: logging.Logger, response: dict) -> None:
         extra={
             "event": "response",
             "detail": {
-                "orderId": response.get("orderId"),
-                "status": response.get("status"),
-                "executedQty": response.get("executedQty"),
-                "avgPrice": response.get("avgPrice"),
+                "orderId": response.get("orderId") or response.get("algoId"),
+                "status": response.get("status") or response.get("algoStatus"),
+                "executedQty": response.get("executedQty") or response.get("quantity"),
+                "avgPrice": response.get("avgPrice") or response.get("price"),
                 "symbol": response.get("symbol"),
                 "side": response.get("side"),
-                "type": response.get("type"),
+                "type": response.get("type") or response.get("orderType"),
             },
         },
     )
