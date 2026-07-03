@@ -17,7 +17,7 @@ from typing import Optional
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 VALID_SIDES = {"BUY", "SELL"}
-VALID_ORDER_TYPES = {"MARKET", "LIMIT"}
+VALID_ORDER_TYPES = {"MARKET", "LIMIT", "STOP_LIMIT"}
 
 
 # ── Individual validators ─────────────────────────────────────────────────────
@@ -156,25 +156,25 @@ def validate_price(price: Optional[str], order_type: str) -> Optional[float]:
     Validate the order price.
 
     Rules:
-        - Required if order_type is 'LIMIT'
+        - Required if order_type is 'LIMIT' or 'STOP_LIMIT'
         - Must be convertible to a float
         - Must be greater than 0
         - Optional (None is acceptable) for MARKET orders
 
     Args:
         price:      The price string from CLI input, or None.
-        order_type: The validated order type ('MARKET' or 'LIMIT').
+        order_type: The validated order type ('MARKET', 'LIMIT', 'STOP_LIMIT').
 
     Returns:
         The price as a positive float, or None for MARKET orders.
 
     Raises:
-        ValueError: If price is missing for LIMIT or is an invalid number.
+        ValueError: If price is missing for LIMIT/STOP_LIMIT or is an invalid number.
     """
-    if order_type == "LIMIT":
+    if order_type in ("LIMIT", "STOP_LIMIT"):
         if price is None:
             raise ValueError(
-                "--price is required for LIMIT orders. "
+                f"--price is required for {order_type} orders. "
                 "Example: --price 28000.00"
             )
 
@@ -196,6 +196,50 @@ def validate_price(price: Optional[str], order_type: str) -> Optional[float]:
     return None
 
 
+def validate_stop_price(stop_price: Optional[str], order_type: str) -> Optional[float]:
+    """
+    Validate the stop price.
+
+    Rules:
+        - Required if order_type is 'STOP_LIMIT'
+        - Must be convertible to a float
+        - Must be greater than 0
+        - Optional (None is acceptable) for MARKET and LIMIT orders
+
+    Args:
+        stop_price: The stop price string from CLI input, or None.
+        order_type: The validated order type ('MARKET', 'LIMIT', 'STOP_LIMIT').
+
+    Returns:
+        The stop price as a positive float, or None for MARKET/LIMIT.
+
+    Raises:
+        ValueError: If stop_price is missing for STOP_LIMIT or is an invalid number.
+    """
+    if order_type == "STOP_LIMIT":
+        if stop_price is None:
+            raise ValueError(
+                "--stop-price is required for STOP_LIMIT orders. "
+                "Example: --stop-price 27900.00"
+            )
+
+        try:
+            sp = float(stop_price)
+        except (ValueError, TypeError):
+            raise ValueError(
+                f"--stop-price '{stop_price}' is invalid. Must be a positive number (e.g. 27900.00)."
+            )
+
+        if sp <= 0:
+            raise ValueError(
+                f"--stop-price '{stop_price}' is invalid. Must be greater than 0."
+            )
+
+        return sp
+
+    return None
+
+
 # ── Master validator ──────────────────────────────────────────────────────────
 
 def validate_order_inputs(
@@ -204,6 +248,7 @@ def validate_order_inputs(
     order_type: str,
     quantity: str,
     price: Optional[str] = None,
+    stop_price: Optional[str] = None,
 ) -> dict:
     """
     Run all validations in sequence and return cleaned, typed values.
@@ -214,12 +259,13 @@ def validate_order_inputs(
     Args:
         symbol:     Trading pair (e.g. 'BTCUSDT').
         side:       Order side ('BUY' or 'SELL').
-        order_type: Order type ('MARKET' or 'LIMIT').
+        order_type: Order type ('MARKET', 'LIMIT', 'STOP_LIMIT').
         quantity:   Order quantity as string.
         price:      Order price as string, or None for MARKET orders.
+        stop_price: Stop price as string, required for STOP_LIMIT orders.
 
     Returns:
-        dict with keys: symbol, side, order_type, quantity, price
+        dict with keys: symbol, side, order_type, quantity, price, stop_price
         All values are cleaned and correctly typed.
 
     Raises:
@@ -230,6 +276,7 @@ def validate_order_inputs(
     validated_order_type = validate_order_type(order_type)
     validated_quantity   = validate_quantity(quantity)
     validated_price      = validate_price(price, validated_order_type)
+    validated_stop_price = validate_stop_price(stop_price, validated_order_type)
 
     return {
         "symbol":     validated_symbol,
@@ -237,4 +284,5 @@ def validate_order_inputs(
         "order_type": validated_order_type,
         "quantity":   validated_quantity,
         "price":      validated_price,
+        "stop_price": validated_stop_price,
     }
