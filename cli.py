@@ -24,7 +24,14 @@ init(autoreset=True)
 logger = setup_logger()
 
 
-def print_request_summary(symbol: str, side: str, order_type: str, quantity: float, price: Optional[float] = None) -> None:
+def print_request_summary(
+    symbol: str,
+    side: str,
+    order_type: str,
+    quantity: float,
+    price: Optional[float] = None,
+    stop_price: Optional[float] = None,
+) -> None:
     """Print a clean summary of the order request before sending it."""
     print(f"\n{Fore.CYAN}═══════════════════════════════════════")
     print(f"{Fore.CYAN}   Binance Futures Testnet Bot")
@@ -32,8 +39,10 @@ def print_request_summary(symbol: str, side: str, order_type: str, quantity: flo
     print(f"{Fore.GREEN}[INFO] Placing {order_type} {side} order...")
     print(f"  Symbol   : {symbol}")
     print(f"  Quantity : {quantity}")
-    if order_type == "LIMIT" and price is not None:
+    if price is not None:
         print(f"  Price    : {price}")
+    if stop_price is not None:
+        print(f"  Stop Price: {stop_price}")
     print()
 
 
@@ -66,13 +75,20 @@ def main() -> None:
         "-d", "--side", required=True, choices=["BUY", "SELL", "buy", "sell"], help="Order side (BUY/SELL)"
     )
     parser.add_argument(
-        "-t", "--type", required=True, choices=["MARKET", "LIMIT", "market", "limit"], help="Order type (MARKET/LIMIT)"
+        "-t",
+        "--type",
+        required=True,
+        choices=["MARKET", "LIMIT", "STOP_LIMIT", "market", "limit", "stop_limit"],
+        help="Order type (MARKET/LIMIT/STOP_LIMIT)",
     )
     parser.add_argument(
         "-q", "--quantity", required=True, help="Quantity to trade (positive number)"
     )
     parser.add_argument(
-        "-p", "--price", help="Price (required for LIMIT orders)"
+        "-p", "--price", help="Price (required for LIMIT and STOP_LIMIT orders)"
+    )
+    parser.add_argument(
+        "-sp", "--stop-price", help="Stop trigger price (required for STOP_LIMIT orders)"
     )
 
     # Parse arguments
@@ -86,6 +102,7 @@ def main() -> None:
             order_type=args.type,
             quantity=args.quantity,
             price=args.price,
+            stop_price=args.stop_price,
         )
     except ValueError as val_err:
         # Log validation error
@@ -115,6 +132,7 @@ def main() -> None:
         order_type=validated_inputs["order_type"],
         quantity=validated_inputs["quantity"],
         price=validated_inputs["price"],
+        stop_price=validated_inputs["stop_price"],
     )
 
     # 4. Instantiate API Client & Execute Order
@@ -127,6 +145,7 @@ def main() -> None:
             order_type=validated_inputs["order_type"],
             quantity=validated_inputs["quantity"],
             price=validated_inputs["price"],
+            stop_price=validated_inputs["stop_price"],
         )
         
         # 5. Print Response Details

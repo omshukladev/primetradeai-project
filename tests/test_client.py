@@ -87,6 +87,36 @@ def test_place_limit_order_success(mock_binance_client):
     )
 
 
+def test_place_stop_limit_order_success(mock_binance_client):
+    """Test successfully placing a STOP_LIMIT order."""
+    client = BinanceTestnetClient("fake_key", "fake_secret")
+
+    # Mock response
+    mock_binance_client.futures_create_order.return_value = {
+        "orderId": 987654,
+        "status": "NEW",
+        "symbol": "BTCUSDT",
+        "side": "BUY",
+        "type": "STOP",
+        "executedQty": "0.000",
+        "avgPrice": "0.00",
+    }
+
+    response = client.place_order("BTCUSDT", "BUY", "STOP_LIMIT", 0.003, 28000.0, 27900.0)
+
+    assert response["orderId"] == 987654
+    assert response["status"] == "NEW"
+    mock_binance_client.futures_create_order.assert_called_once_with(
+        symbol="BTCUSDT",
+        side="BUY",
+        type="STOP",
+        quantity=0.003,
+        price=28000.0,
+        stopPrice=27900.0,
+        timeInForce="GTC",
+    )
+
+
 def test_place_order_api_exception(mock_binance_client):
     """Test Binance API error handling."""
     client = BinanceTestnetClient("fake_key", "fake_secret")

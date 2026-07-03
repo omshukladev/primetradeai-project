@@ -42,16 +42,18 @@ class BinanceTestnetClient:
         order_type: str,
         quantity: float,
         price: Optional[float] = None,
+        stop_price: Optional[float] = None,
     ) -> dict:
         """
-        Place a Market or Limit order on Binance Futures Testnet (USDT-M).
+        Place a Market, Limit, or Stop-Limit order on Binance Futures Testnet (USDT-M).
 
         Args:
             symbol:     Trading pair (e.g., 'BTCUSDT').
             side:       Order side ('BUY' or 'SELL').
-            order_type: Order type ('MARKET' or 'LIMIT').
+            order_type: Order type ('MARKET', 'LIMIT', or 'STOP_LIMIT').
             quantity:   Quantity to trade.
-            price:      Price for LIMIT orders (ignored for MARKET orders).
+            price:      Price for LIMIT and STOP_LIMIT orders (ignored for MARKET).
+            stop_price: Trigger price for STOP_LIMIT orders (ignored for MARKET/LIMIT).
 
         Returns:
             The raw response dictionary from the Binance API.
@@ -60,17 +62,24 @@ class BinanceTestnetClient:
             BinanceAPIException: If the Binance API returns an error.
             Exception:           For network or other runtime failures.
         """
+        # Map internal STOP_LIMIT to Binance Futures API order type "STOP"
+        api_type = "STOP" if order_type == "STOP_LIMIT" else order_type
+
         # Prepare parameters for the API request
         params = {
             "symbol": symbol,
             "side": side,
-            "type": order_type,
+            "type": api_type,
             "quantity": quantity,
         }
 
         if order_type == "LIMIT":
             params["price"] = price
             params["timeInForce"] = "GTC"  # Good 'Til Cancelled is standard for limit orders
+        elif order_type == "STOP_LIMIT":
+            params["price"] = price
+            params["stopPrice"] = stop_price
+            params["timeInForce"] = "GTC"  # Good 'Til Cancelled is standard for stop-limit orders
 
         # Log the outgoing request before calling the API
         log_request(logger, "/fapi/v1/order", params)

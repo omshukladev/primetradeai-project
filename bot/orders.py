@@ -16,6 +16,7 @@ def execute_order(
     order_type: str,
     quantity: float,
     price: Optional[float] = None,
+    stop_price: Optional[float] = None,
 ) -> dict:
     """
     Delegates validated order placement parameters to the Binance client.
@@ -24,9 +25,10 @@ def execute_order(
         client:     The initialized BinanceTestnetClient.
         symbol:     Trading pair (e.g. 'BTCUSDT').
         side:       Order side ('BUY' or 'SELL').
-        order_type: Order type ('MARKET' or 'LIMIT').
+        order_type: Order type ('MARKET', 'LIMIT', or 'STOP_LIMIT').
         quantity:   Quantity to trade (positive float).
-        price:      Price for LIMIT orders (positive float, or None for MARKET).
+        price:      Price for LIMIT/STOP_LIMIT orders (positive float, or None for MARKET).
+        stop_price: Trigger price for STOP_LIMIT orders (positive float, or None for MARKET/LIMIT).
 
     Returns:
         A dictionary containing the API response details.
@@ -38,5 +40,6 @@ def execute_order(
         order_type=order_type,
         quantity=quantity,
         price=price,
+        stop_price=stop_price,
     )
     return response
